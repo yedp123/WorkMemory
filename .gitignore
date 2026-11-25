@@ -1,0 +1,29 @@
+# Virtual environments
+.venv/
+venv/
+
+# Python bytecode & packaging
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+
+# SQLite databases
+*.db
+*.db-wal
+*.db-shm
+
+# Local runtime folders
+/attachments/
+/drafts/
+/logs/
+/data/
+/runtime/
+/WorkMemory/
+*.log

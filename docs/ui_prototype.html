@@ -1,0 +1,1749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Work Memory</title>
+<style>
+:root{
+  --bg:#17191d;
+  --panel:#1e2126;
+  --panel2:#24282e;
+  --line:#30353d;
+  --line-soft:#262a31;
+  --text:#edf0f3;
+  --muted:#929aa5;
+  --soft:#c2c8d0;
+  --accent:#a9b8df;
+  --accent-bg:#2a3242;
+  --green:#8dbda4;
+  --amber:#d8b57c;
+  --purple:#b7a6de;
+  --radius:13px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font:14px/1.45 "Segoe UI",Inter,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer;color:inherit}
+
+.app{min-height:100vh;max-width:1600px;margin:auto;padding:0 42px 48px}
+
+/* Topbar */
+.topbar{
+  height:76px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  border-bottom:1px solid var(--line);
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  font-weight:650;
+  font-size:16px;
+  letter-spacing:.1px;
+  cursor:pointer;
+}
+.logo{
+  width:30px;height:30px;border-radius:9px;
+  background:#343b47;display:grid;place-items:center;color:#d9e1f3;
+}
+.search{
+  width:min(360px,36vw);
+  height:38px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:#202329;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:0 12px;
+  color:var(--muted);
+  transition:border-color .15s;
+}
+.search:focus-within{border-color:#535d6e}
+.search input{border:0;outline:0;background:transparent;color:var(--text);width:100%}
+.search-clear{
+  border:0;background:none;color:var(--muted);padding:0 2px;font-size:15px;display:none;
+}
+.search-clear.visible{display:block}
+
+.topright{display:flex;align-items:center;gap:14px;color:var(--muted)}
+.capture-trigger{
+  border:1px solid var(--line);background:var(--panel);color:var(--soft);
+  padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:550;
+  transition:background .15s,border-color .15s,color .15s;
+}
+.capture-trigger:hover{background:var(--panel2);border-color:#4b5361;color:var(--text)}
+.icon-action{
+  border:0;background:none;color:var(--muted);
+  width:32px;height:32px;border-radius:8px;
+  display:grid;place-items:center;font-size:16px;
+  transition:background .15s,color .15s;
+}
+.icon-action:hover{background:var(--panel);color:var(--text)}
+.icon-action.active{background:var(--panel2);color:var(--text)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block}
+.dot.paused{background:var(--amber)}
+.dot.completed{background:#707986}
+.status-dot-wrap{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;cursor:pointer;
+}
+
+/* Primary 2-Tab Navigation */
+.nav{
+  display:flex;
+  gap:28px;
+  height:56px;
+  align-items:center;
+  border-bottom:1px solid var(--line);
+}
+.nav button{
+  height:100%;padding:0 2px;background:none;border:0;color:var(--muted);
+  position:relative;font-size:14px;
+}
+.nav button:hover{color:var(--soft)}
+.nav button.active{color:var(--text)}
+.nav button.active:after{
+  content:"";position:absolute;bottom:-1px;left:0;right:0;
+  height:2px;background:#aab9df;border-radius:2px;
+}
+
+main{padding-top:30px}
+.pagehead{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:24px;gap:16px;flex-wrap:wrap;
+}
+h1{font-size:28px;letter-spacing:-.7px;margin:0 0 5px;font-weight:620}
+.subtitle{color:var(--muted);font-size:13px}
+
+.primary{
+  border:0;background:#dce3f1;color:#20242b;
+  padding:9px 15px;border-radius:9px;font-weight:650;font-size:13px;
+}
+.primary:hover{background:#ebf0f9}
+.secondary{
+  border:1px solid var(--line);background:var(--panel2);
+  padding:8px 12px;border-radius:8px;color:var(--soft);font-size:12.5px;
+}
+.secondary:hover{border-color:#4b5361;color:var(--text)}
+.textbutton{border:0;background:none;color:var(--accent);padding:4px 0;font-size:12px}
+.textbutton:hover{text-decoration:underline}
+
+/* Subtle Dismissible Discovery Whisper */
+.discovery-whisper{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:8px 2px 18px;margin-top:-6px;
+  font-size:12.5px;color:var(--muted);
+}
+.discovery-whisper span strong{color:var(--soft);font-weight:550}
+.discovery-actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.whisper-close{
+  border:0;background:none;color:#6c7582;font-size:15px;padding:0 2px;line-height:1;
+}
+.whisper-close:hover{color:var(--soft)}
+
+/* Projects Grid */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 22px}
+.project{min-width:0;cursor:pointer}
+.cover{
+  height:clamp(145px,16vw,220px);border-radius:12px;overflow:hidden;
+  position:relative;display:grid;place-items:center;
+  border:1px solid #343941;transition:transform .18s,border-color .18s;
+}
+.project:hover .cover{transform:translateY(-2px);border-color:#596274}
+.cover:after{content:"";position:absolute;inset:0;background:linear-gradient(140deg,transparent 40%,#0003)}
+.cover svg{width:75%;height:75%;opacity:.9}
+.cover.c1{background:radial-gradient(circle at 50% 35%,#52647b,#29313d 65%,#20242c)}
+.cover.c2{background:radial-gradient(circle at 65% 30%,#76647d,#38313f 60%,#24232b)}
+.cover.c3{background:radial-gradient(circle at 45% 35%,#677f79,#303d3d 65%,#202a2c)}
+.cover.c4{background:radial-gradient(circle at 55% 35%,#81745d,#3e3931 65%,#24231f)}
+.cover.c5{background:radial-gradient(circle at 50% 35%,#63708d,#303746 65%,#20242d)}
+.cover.c6{background:radial-gradient(circle at 50% 35%,#806b60,#40332f 65%,#252120)}
+.coverlabel{
+  position:absolute;left:14px;bottom:12px;color:#ffffffb8;
+  font-size:10px;letter-spacing:1.7px;text-transform:uppercase;z-index:1;
+}
+.projectinfo{padding:12px 2px 0}
+.projecttitle{font-weight:620;font-size:16px;margin-bottom:3px}
+.projectdesc{
+  font-size:12.5px;color:var(--muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.projectmeta{
+  display:flex;align-items:center;gap:7px;margin-top:8px;
+  color:#9ca5af;font-size:11.5px;
+}
+
+.sectionline{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:0 0 14px;gap:10px;
+}
+.sectionline strong{font-size:13px;font-weight:600;color:#cbd1d8}
+.hidden{display:none!important}
+
+/* Surface Panels */
+.surface{
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius);padding:20px;
+}
+
+/* History & Calendar */
+.historylayout{
+  display:grid;grid-template-columns:minmax(300px,.88fr) minmax(430px,1.4fr);
+  gap:26px;align-items:start;
+}
+.monthhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.monthhead strong{font-size:15px}
+.iconbtn{
+  background:transparent;border:1px solid var(--line);border-radius:7px;
+  width:29px;height:29px;color:var(--muted);
+}
+.iconbtn:hover{border-color:#515a69;color:var(--text)}
+.monthnav{display:flex;gap:6px}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.weekday{text-align:center;color:#747e8a;font-size:10.5px;padding:5px 0 7px}
+.day{
+  border:0;background:transparent;border-radius:8px;min-height:40px;
+  color:#bfc5cd;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;font-size:12px;
+}
+.day:hover{background:#2a2f37}
+.day.muted{color:#505863}
+.day.selected{background:#3b465b;color:#fff}
+.day.today:not(.selected){outline:1px solid #68758c}
+.daymarks{display:flex;gap:3px;height:5px;align-items:center}
+.mark{width:4px;height:4px;border-radius:50%;background:var(--accent)}
+.mark-note{width:4px;height:4px;border-radius:50%;background:var(--amber)}
+.mark-event{width:4px;height:4px;border-radius:1px;background:var(--purple);transform:rotate(45deg)}
+.calendar-footer{
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--line-soft);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+}
+.calendarhint{
+  color:var(--muted);font-size:11px;
+  display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+}
+.calendarhint span{display:inline-flex;align-items:center;gap:5px}
+
+.dayhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px}
+.dayhead strong{font-size:16px}
+.todaytag{
+  font-size:10px;color:#c6d3f3;background:#30394a;
+  padding:4px 8px;border-radius:20px;letter-spacing:.4px;
+}
+
+.eventgroup{border-top:1px solid var(--line);padding:13px 0}
+.eventgroup:first-of-type{border-top:0;padding-top:4px}
+.grouphead{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  background:none;border:0;padding:0;color:#dce1e7;text-align:left;
+}
+.groupleft{display:flex;align-items:center;gap:9px;font-weight:600;font-size:13px}
+.chevron{color:#7f8995;transition:transform .15s}
+.eventgroup.collapsed .chevron{transform:rotate(-90deg)}
+.eventgroup.collapsed .groupbody{display:none}
+.groupbody{padding:10px 0 0 22px}
+
+.fileitem{display:flex;align-items:center;gap:10px;padding:7px 0;color:#c3cad2;font-size:12.5px}
+.fileicon{
+  width:28px;height:26px;border-radius:7px;background:#2a3039;
+  display:grid;place-items:center;color:#aebbd7;font-size:9.5px;font-weight:600;flex:none;
+}
+.filepath{color:#78828e;font-size:11px;margin-top:1px}
+.morefiles{margin:6px 0 2px 38px;border:0;background:none;color:#aebce0;font-size:11.5px;padding:4px 0}
+
+.eventrow{display:flex;gap:12px;padding:8px 0;color:#c3cad2;font-size:12.5px;border-top:1px solid var(--line-soft)}
+.eventrow:first-child{border-top:0;padding-top:2px}
+.eventtime{color:#7f8995;width:44px;flex:none;font-variant-numeric:tabular-nums;font-size:12px}
+.eventdesc{flex:1}
+.eventdesc small{display:block;color:#818b97;font-size:11px;margin-top:3px}
+.pill-small{
+  display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:12px;
+  border:1px solid var(--line);color:var(--soft);margin-left:6px;
+}
+.pill-scheduled{border-color:#4e4666;color:var(--purple)}
+.pill-completed{border-color:#3a5247;color:var(--green)}
+.pill-cancelled{color:#6f7885;text-decoration:line-through}
+.shot-thumb{
+  margin-top:8px;max-width:220px;border-radius:8px;border:1px solid var(--line);display:block;
+}
+.empty{color:var(--muted);font-size:12px;padding:10px 0}
+
+/* Project Detail */
+.back{border:0;background:none;color:var(--muted);padding:0;margin-bottom:20px;font-size:13px}
+.back:hover{color:var(--text)}
+.projecthero{
+  display:grid;grid-template-columns:minmax(250px,.85fr) minmax(320px,1.25fr);
+  gap:28px;align-items:center;margin-bottom:24px;
+}
+.heroimage{height:220px;border-radius:13px;overflow:hidden}
+.herotext h1{font-size:30px}
+.herotext p{color:var(--muted);max-width:580px;margin:8px 0 14px}
+.tags{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.tag{border:1px solid #3a4049;color:#aeb7c2;border-radius:20px;padding:3px 9px;font-size:10.5px}
+.hero-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+
+/* Last Known State */
+.lks-panel{
+  background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:var(--radius);padding:17px 20px;margin-bottom:24px;
+}
+.lks-text{color:#dfe4ea;font-size:13.5px;line-height:1.6;margin:0}
+.lks-meta{
+  display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;
+  font-size:11px;color:var(--muted);align-items:center;
+}
+.lks-tag-c{color:var(--green)}
+.lks-tag-i{color:var(--amber)}
+.lks-input{
+  width:100%;min-height:76px;background:var(--bg);color:var(--text);
+  border:1px solid #4e596d;border-radius:8px;padding:10px;resize:vertical;margin-bottom:10px;
+}
+
+.detailgrid{
+  display:grid;grid-template-columns:minmax(0,1.45fr) minmax(290px,.85fr);
+  gap:24px;align-items:start;
+}
+.detail-side{display:flex;flex-direction:column;gap:20px}
+.note{padding:11px 0;border-top:1px solid var(--line);font-size:12.5px;color:#c6cdd5}
+.note:first-of-type{border-top:0;padding-top:2px}
+.note small{display:block;color:#818b97;margin-top:5px;font-size:11px}
+
+/* Settings */
+.settings-stack{display:flex;flex-direction:column;gap:18px;max-width:860px}
+.setting-row{
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
+  padding:13px 0;border-top:1px solid var(--line-soft);
+}
+.setting-row:first-of-type{border-top:0;padding-top:4px}
+.setting-row small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.dark-select,.dark-input{
+  background:var(--bg);color:var(--text);border:1px solid var(--line);
+  border-radius:8px;padding:7px 10px;font-size:12.5px;outline:none;
+}
+.dark-select:focus,.dark-input:focus{border-color:#5b677c}
+.code-pill{
+  font-family:"Cascadia Code",Consolas,monospace;font-size:11.5px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--soft);
+  padding:3px 8px;border-radius:6px;
+}
+
+/* Modals */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(10,12,16,.68);
+  display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
+}
+.modal-backdrop.open{display:flex}
+.modal{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  width:100%;max-width:620px;max-height:90vh;display:flex;flex-direction:column;
+  box-shadow:0 20px 50px rgba(0,0,0,.45);overflow:hidden;
+}
+.modal-head{
+  padding:16px 20px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-body{padding:18px 20px;overflow-y:auto;flex:1}
+.modal-foot{
+  padding:14px 20px;border-top:1px solid var(--line);background:#1a1d22;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.form-group{margin-bottom:12px}
+.form-label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px}
+
+.draft-bar{
+  display:none;align-items:center;justify-content:space-between;
+  background:#2a251d;border:1px solid #4d402c;color:var(--amber);
+  padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:12px;
+}
+.draft-bar.visible{display:flex}
+.sub-drawer{
+  background:var(--bg);border:1px solid var(--line);border-radius:10px;
+  padding:12px;margin-top:12px;display:none;
+}
+.sub-drawer.open{display:block}
+.tool-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+.tool-btn{
+  border:1px solid var(--line);background:var(--panel);color:var(--soft);
+  padding:4px 9px;border-radius:6px;font-size:11.5px;
+}
+.tool-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--text)}
+#annotatorCanvas{
+  width:100%;height:210px;border:1px solid var(--line);border-radius:8px;
+  background:#13161b;cursor:crosshair;display:block;
+}
+pre.json-box{
+  background:#121418;color:#c7d2e3;border:1px solid var(--line);
+  padding:14px;border-radius:9px;font-family:"Cascadia Code",Consolas,monospace;
+  font-size:11.5px;overflow:auto;max-height:300px;margin:0;
+}
+
+/* Quiet Toast Feedback */
+.toast-stack{
+  position:fixed;right:24px;bottom:24px;width:330px;
+  display:flex;flex-direction:column;gap:10px;z-index:200;pointer-events:none;
+}
+.toast{
+  pointer-events:auto;background:var(--panel);border:1px solid #3c434f;
+  border-left:3px solid var(--green);border-radius:11px;padding:12px 14px;
+  box-shadow:0 12px 30px rgba(0,0,0,.45);
+}
+.toast.cal{border-left-color:var(--purple)}
+.toast-top{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:10.5px;color:var(--muted);margin-bottom:3px;
+}
+.toast-title{font-weight:600;font-size:13px;color:var(--text)}
+.toast-msg{font-size:12px;color:var(--muted);margin-top:2px}
+
+@media(max-width:900px){
+  .app{padding:0 20px 36px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .historylayout,.projecthero,.detailgrid{grid-template-columns:1fr}
+  .heroimage{height:185px}
+}
+@media(max-width:580px){
+  .app{padding:0 14px 30px}
+  .search{width:44vw}
+  .grid{grid-template-columns:1fr 1fr;gap:18px 12px}
+  .cover{height:130px}
+  .form-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR: Brand, Global Search, Quick Capture, Discreet Status Dot & Settings Gear -->
+  <header class="topbar">
+    <div class="brand" onclick="showPage('projects')">
+      <div class="logo">&#9638;</div>
+      Work Memory
+    </div>
+    <label class="search">
+      <span>&#8981;</span>
+      <input id="globalSearch" placeholder="Search projects, files, notes...">
+      <button type="button" id="clearSearch" class="search-clear">&times;</button>
+    </label>
+    <div class="topright">
+      <button class="capture-trigger" id="btnQuickCapture" title="Quick Capture (Ctrl+Shift+M)">&#65291; Capture</button>
+      <button class="icon-action" id="btnSettings" title="Settings" onclick="showPage('settings')">&#9881;</button>
+      <span class="status-dot-wrap" id="statusIndicator" title="Observing workspaces (read-only)" onclick="showPage('settings')">
+        <i class="dot" id="topDot"></i>
+      </span>
+    </div>
+  </header>
+
+  <!-- PRIMARY NAVIGATION: Projects & History only -->
+  <nav class="nav">
+    <button class="active" data-page="projects">Projects</button>
+    <button data-page="history">History</button>
+  </nav>
+
+  <main>
+
+    <!-- SCREEN 1: PROJECTS (Calmest, simplest screen) -->
+    <section id="projectsPage">
+      <div class="pagehead">
+        <div>
+          <h1>Projects</h1>
+          <div class="subtitle">Your work, without the filing cabinet.</div>
+        </div>
+        <button class="primary" id="newProject">&#65291; Register project</button>
+      </div>
+
+      <!-- Subtle, dismissible project suggestion -->
+      <div class="discovery-whisper" id="discoveryWhisper">
+        <span>Suggested folder found in workspace: <strong>D:\Work\Face3D_Node</strong></span>
+        <div class="discovery-actions">
+          <button class="textbutton" id="btnConfirmDiscovery">Register</button>
+          <button class="whisper-close" id="btnDismissDiscovery" title="Dismiss suggestion">&times;</button>
+        </div>
+      </div>
+
+      <div class="grid" id="projectGrid"></div>
+    </section>
+
+    <!-- SCREEN 2: HISTORY (Calendar + Unified Daily Timeline) -->
+    <section id="historyPage" class="hidden">
+      <div class="pagehead">
+        <div>
+          <h1>History</h1>
+          <div class="subtitle">A quiet record of what happened and what is planned, day by day.</div>
+        </div>
+      </div>
+      <div class="historylayout">
+        <div class="surface">
+          <div class="monthhead">
+            <strong id="monthLabel">November 2026</strong>
+            <div class="monthnav">
+              <button class="iconbtn" id="prevMonth">&lsaquo;</button>
+              <button class="iconbtn" id="nextMonth">&rsaquo;</button>
+            </div>
+          </div>
+          <div class="calendar" id="globalCalendar"></div>
+          <div class="calendar-footer">
+            <div class="calendarhint">
+              <span><i class="mark"></i> Activity</span>
+              <span><i class="mark-note"></i> Notes</span>
+              <span><i class="mark-event"></i> Planned</span>
+            </div>
+            <button class="textbutton" id="btnScheduleHistory">&#65291; Schedule event</button>
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="dayhead">
+            <strong id="selectedDateLabel">Monday, November 23</strong>
+            <span class="todaytag" id="todayTag">TODAY</span>
+          </div>
+          <div id="globalDailyEvents"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: PROJECT DETAIL -->
+    <section id="detailPage" class="hidden">
+      <button class="back" onclick="showPage('projects')">&larr; &nbsp; Projects</button>
+
+      <div class="projecthero">
+        <div class="heroimage cover c1" id="detailCover"></div>
+        <div class="herotext">
+          <h1 id="detailTitle">Action Director</h1>
+          <p id="detailDescription"></p>
+          <div class="tags" id="detailTags"></div>
+          <div class="projectmeta" style="margin-top:12px;">
+            <i class="dot" id="detailStatusDot"></i>
+            <span id="detailStatusLabel">Ongoing</span>
+            <span>&middot;</span>
+            <span id="detailFolderPath" style="font-family:Consolas,monospace;font-size:11px;"></span>
+          </div>
+          <div class="hero-actions">
+            <button class="primary" id="btnDetailCapture">&#65291; Capture note</button>
+            <button class="secondary" id="btnToggleStatus">Mark completed</button>
+            <button class="secondary" id="btnOpenFolder">&#8599; Open folder</button>
+            <button class="secondary" id="btnExportManifest">Export</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Last Known State -->
+      <div class="lks-panel">
+        <div class="sectionline" style="margin-bottom:8px;">
+          <strong>Last known state</strong>
+          <button class="textbutton" id="btnEditLks">Edit summary</button>
+        </div>
+        <div id="lksDisplay">
+          <p class="lks-text" id="lksText"></p>
+          <div class="lks-meta">
+            <span class="lks-tag-c">&#9679; From your notes</span>
+            <span class="lks-tag-i">&#9679; From recent file activity</span>
+          </div>
+        </div>
+        <div id="lksEditor" class="hidden">
+          <textarea id="lksInput" class="lks-input"></textarea>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="secondary" id="btnCancelLks">Cancel</button>
+            <button class="primary" id="btnSaveLks">Save summary</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Split -->
+      <div class="detailgrid">
+        <div class="surface">
+          <div class="sectionline">
+            <strong id="detailTimelineTitle">Recent activity &amp; notes</strong>
+            <div style="display:flex;gap:12px;">
+              <button class="textbutton hidden" id="btnClearDetailDate">Show all recent</button>
+              <button class="textbutton" onclick="showPage('history')">All history &rarr;</button>
+            </div>
+          </div>
+          <div id="detailTimeline"></div>
+        </div>
+
+        <div class="detail-side">
+          <div class="surface">
+            <div class="sectionline">
+              <strong>Project calendar &middot; Nov 2026</strong>
+              <button class="textbutton" id="btnDetailAddEvent">&#65291; Event</button>
+            </div>
+            <div class="calendar" id="projectCalendar"></div>
+            <div class="calendar-footer">
+              <div class="calendarhint">
+                <span><i class="mark"></i> Activity</span>
+                <span><i class="mark-note"></i> Notes</span>
+                <span><i class="mark-event"></i> Planned</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="surface">
+            <div class="sectionline">
+              <strong>Project notes</strong>
+              <button class="textbutton" id="btnQuickAddNote">&#65291; Add</button>
+            </div>
+            <div id="detailNotesList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 4: SETTINGS (Accessed via top-right gear icon) -->
+    <section id="settingsPage" class="hidden">
+      <div class="pagehead">
+        <div>
+          <h1>Settings</h1>
+          <div class="subtitle">Local-first configuration. Your original folders are never modified.</div>
+        </div>
+      </div>
+
+      <div class="settings-stack">
+        <div class="surface" style="border-left:3px solid var(--green);">
+          <div class="sectionline" style="margin-bottom:6px;">
+            <strong style="color:var(--green);">Read-only workspace protection</strong>
+          </div>
+          <p style="margin:0;color:var(--soft);font-size:13px;">
+            Work Memory observes your folders without renaming, moving, or writing files inside them. All notes, screenshots, voice recordings, and history live in Work Memory's own local storage.
+          </p>
+        </div>
+
+        <div class="surface">
+          <div class="sectionline">
+            <strong>Monitored workspaces</strong>
+            <div style="display:flex;gap:8px;">
+              <button class="secondary" id="btnAddWorkspace">&#65291; Add folder</button>
+              <button class="secondary" id="btnToggleMonitorSettings">Pause monitoring</button>
+            </div>
+          </div>
+          <div id="workspaceList">
+            <div class="setting-row">
+              <div>
+                <div>D:\Projects</div>
+                <small>Watching &middot; 5 registered projects</small>
+              </div>
+              <span class="pill-small pill-completed">Active</span>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div>E:\Archive_3D</div>
+                <small>Watching &middot; 1 completed project</small>
+              </div>
+              <span class="pill-small pill-completed">Active</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="sectionline"><strong>Notifications &amp; reminders</strong></div>
+          <div class="setting-row">
+            <div>
+              <div>New-file capture prompts</div>
+              <small>Quietly offer to capture context when meaningful new files are created.</small>
+            </div>
+            <input type="checkbox" checked>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div>Repeated-save reminder</div>
+              <small>Offer a quick note prompt after repeated saves on the same file.</small>
+            </div>
+            <select class="dark-select">
+              <option>Every 3 saves</option>
+              <option selected>Every 5 saves</option>
+              <option>Every 10 saves</option>
+              <option>Never</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div>Notification duration</div>
+              <small>Automatically pauses when you are away or in fullscreen.</small>
+            </div>
+            <select class="dark-select">
+              <option>10 seconds</option>
+              <option>30 seconds</option>
+              <option selected>1 minute</option>
+              <option>5 minutes</option>
+              <option>Until dismissed</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div>Periodic save reminder</div>
+              <small>Reminds you to save your work at a set interval.</small>
+            </div>
+            <select class="dark-select">
+              <option>Every 15 minutes</option>
+              <option selected>Every 30 minutes</option>
+              <option>Off</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="sectionline"><strong>Ignored files &amp; folders</strong></div>
+          <div style="display:flex;flex-wrap:wrap;gap:7px;">
+            <span class="code-pill">*.tmp</span>
+            <span class="code-pill">*.bak</span>
+            <span class="code-pill">~$*</span>
+            <span class="code-pill">Library/</span>
+            <span class="code-pill">Temp/</span>
+            <span class="code-pill">Cache/</span>
+            <span class="code-pill">Auto-Save/</span>
+            <span class="code-pill">node_modules/</span>
+            <span class="code-pill">.git/objects/</span>
+          </div>
+        </div>
+
+        <div class="surface">
+          <div class="sectionline"><strong>Portability &amp; backup</strong></div>
+          <div class="setting-row">
+            <div>
+              <div>Import project memory</div>
+              <small>Restore history, notes, and attachments from an exported project manifest.</small>
+            </div>
+            <button class="secondary" id="btnImportManifest">Import manifest...</button>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div>Backup local database</div>
+              <small>Save a clean copy of your Work Memory database and attachments.</small>
+            </div>
+            <button class="secondary" id="btnBackupDb">Create backup</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- MODAL: REGISTER PROJECT -->
+<div class="modal-backdrop" id="registerModal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head">
+      <strong style="font-size:15px;">Register Project</strong>
+      <button class="iconbtn" id="btnCloseRegister">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Project name</label>
+        <input id="regName" class="dark-input" style="width:100%;" placeholder="e.g. Character Rigging Study">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Existing folder path</label>
+        <input id="regPath" class="dark-input" style="width:100%;" placeholder="e.g. D:\Projects\Rigging_Study">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Short description (optional)</label>
+        <input id="regDesc" class="dark-input" style="width:100%;" placeholder="What is this project about?">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span style="font-size:11.5px;color:var(--muted);">Observed read-only. Files stay where they are.</span>
+      <button class="primary" id="btnConfirmRegister">Register</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: QUICK CAPTURE (Progressive disclosure: tools reveal only when opened) -->
+<div class="modal-backdrop" id="captureModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <strong style="font-size:15px;">Quick Capture</strong>
+        <div style="font-size:11.5px;color:var(--muted);">Save a note, voice memo, or screenshot to your project memory.</div>
+      </div>
+      <button class="iconbtn" id="btnCloseCapture">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="draft-bar" id="draftBar">
+        <span>Unfinished draft recovered.</span>
+        <button class="textbutton" style="color:var(--amber);" id="btnDiscardDraft">Discard</button>
+      </div>
+      <div class="form-row">
+        <div>
+          <label class="form-label">Project</label>
+          <select id="capProject" class="dark-select" style="width:100%;"></select>
+        </div>
+        <div>
+          <label class="form-label">Linked file (optional)</label>
+          <input id="capFile" class="dark-input" style="width:100%;" placeholder="e.g. export/character_export.py">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <textarea id="capText" class="lks-input" placeholder="Why did you make this decision? Where did you leave off?"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="secondary" id="btnToggleVoice">&#127908; Voice note</button>
+        <button class="secondary" id="btnToggleShot">&#128247; Screenshot</button>
+      </div>
+
+      <!-- Progressive Disclosure: Voice Drawer -->
+      <div class="sub-drawer" id="voiceDrawer">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+          <div>
+            <div style="font-size:12.5px;font-weight:600;">Voice note</div>
+            <div style="font-size:11.5px;color:var(--muted);" id="voiceStatus">Ready to record locally.</div>
+          </div>
+          <button class="primary" style="padding:6px 12px;font-size:12px;" id="btnRecordVoice">Start recording</button>
+        </div>
+        <div id="voiceResult" class="hidden" style="margin-top:10px;">
+          <label class="form-label">Review &amp; edit transcription</label>
+          <textarea id="voiceTranscript" class="lks-input" style="min-height:56px;"></textarea>
+          <div style="display:flex;gap:12px;font-size:12px;color:var(--soft);flex-wrap:wrap;">
+            <label><input type="radio" name="audioMode" value="both" checked> Keep audio &amp; text</label>
+            <label><input type="radio" name="audioMode" value="text"> Transcription only</label>
+            <label><input type="radio" name="audioMode" value="audio"> Audio only</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progressive Disclosure: Screenshot & Annotation Drawer -->
+      <div class="sub-drawer" id="shotDrawer">
+        <div class="tool-row">
+          <button class="tool-btn active" data-tool="pen">Pen</button>
+          <button class="tool-btn" data-tool="arrow">Arrow</button>
+          <button class="tool-btn" data-tool="rect">Rect</button>
+          <button class="tool-btn" data-tool="circle">Circle</button>
+          <button class="tool-btn" data-tool="text">Text</button>
+          <button class="tool-btn" id="btnUndoShot">Undo</button>
+          <button class="tool-btn" id="btnResetShot">Reset</button>
+          <span style="margin-left:auto;font-size:11px;color:var(--muted);">Draw on preview</span>
+        </div>
+        <canvas id="annotatorCanvas" width="580" height="210"></canvas>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span style="font-size:11.5px;color:var(--muted);">Closing keeps unfinished text as a draft.</span>
+      <div style="display:flex;gap:8px;">
+        <button class="secondary" id="btnDraftClose">Save draft</button>
+        <button class="primary" id="btnSaveCapture">Save entry</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: SCHEDULE EVENT (Triggered only from Calendar views) -->
+<div class="modal-backdrop" id="eventModal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-head">
+      <strong style="font-size:15px;">Schedule Event</strong>
+      <button class="iconbtn" id="btnCloseEvent">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title</label>
+        <input id="evTitle" class="dark-input" style="width:100%;" placeholder="e.g. Review standalone export build">
+      </div>
+      <div class="form-row">
+        <div>
+          <label class="form-label">Date</label>
+          <input id="evDate" type="date" class="dark-input" style="width:100%;" value="2026-11-24">
+        </div>
+        <div>
+          <label class="form-label">Time</label>
+          <input id="evTime" type="time" class="dark-input" style="width:100%;" value="15:00">
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label class="form-label">Project (optional)</label>
+          <select id="evProject" class="dark-select" style="width:100%;"></select>
+        </div>
+        <div>
+          <label class="form-label">Reminder</label>
+          <select id="evRemind" class="dark-select" style="width:100%;">
+            <option>10 min before</option>
+            <option>30 min before</option>
+            <option>1 hour before</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description (optional)</label>
+        <input id="evDesc" class="dark-input" style="width:100%;" placeholder="Key check or agenda">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <span style="font-size:11.5px;color:var(--muted);">Shown on your calendar alongside project activity.</span>
+      <button class="primary" id="btnSaveEvent">Add event</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PORTABLE MANIFEST EXPORT -->
+<div class="modal-backdrop" id="manifestModal">
+  <div class="modal">
+    <div class="modal-head">
+      <strong style="font-size:15px;">Export Project Memory</strong>
+      <button class="iconbtn" id="btnCloseManifest">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--muted);margin:0 0 12px;">
+        Exports your project history, notes, events, and attachment references as a portable manifest. Your original project folder is never modified.
+      </p>
+      <pre class="json-box" id="manifestJson"></pre>
+    </div>
+    <div class="modal-foot">
+      <span style="font-size:11.5px;color:var(--green);">Original files untouched</span>
+      <button class="primary" id="btnDownloadManifest">Download manifest.json</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUIET TOAST STACK -->
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+const COVERS = {
+  c1: `<svg viewBox="0 0 300 180" fill="none"><path d="M78 145 112 40l26 43 25-62 45 124" stroke="#d4dff1" stroke-width="2" opacity=".65"/><circle cx="164" cy="43" r="19" stroke="#d4dff1" stroke-width="2"/><path d="M164 62v56m0-35-34 26m34-26 38 21m-38 14-27 38m27-38 31 39" stroke="#d4dff1" stroke-width="3" stroke-linecap="round" opacity=".8"/></svg>`,
+  c2: `<svg viewBox="0 0 300 180" fill="none"><rect x="82" y="35" width="136" height="104" rx="8" stroke="#e0cfe8" stroke-width="2"/><path d="m137 66 43 21-43 22V66Z" fill="#e0cfe8" opacity=".75"/><circle cx="150" cy="87" r="65" stroke="#e0cfe8" opacity=".22"/></svg>`,
+  c3: `<svg viewBox="0 0 300 180" fill="none"><path d="m150 32 65 37v73l-65 37-65-37V69l65-37Z" stroke="#d0e4dc" stroke-width="2"/><path d="m85 69 65 38 65-38m-65 38v72m-65-110 65 37 65-37" stroke="#d0e4dc" stroke-width="2" opacity=".7"/><path d="m150 32 65 37-65 38-65-38 65-37Z" fill="#d0e4dc" opacity=".12"/></svg>`,
+  c4: `<svg viewBox="0 0 300 180" fill="none"><path d="M65 130 116 43l44 87 38-65 39 65H65Z" stroke="#ead9b9" stroke-width="2"/><path d="M116 43v87m44-87v87m38-65v65M65 130h172M92 86h112" stroke="#ead9b9" opacity=".55"/><circle cx="116" cy="43" r="4" fill="#ead9b9"/><circle cx="160" cy="130" r="4" fill="#ead9b9"/></svg>`,
+  c5: `<svg viewBox="0 0 300 180" fill="none"><rect x="91" y="35" width="118" height="110" rx="5" stroke="#d4dcf2" stroke-width="2"/><path d="M111 61h78M111 78h78M111 95h55M111 112h70" stroke="#d4dcf2" stroke-width="3" stroke-linecap="round" opacity=".65"/><path d="M150 35v110" stroke="#d4dcf2" opacity=".35"/></svg>`,
+  c6: `<svg viewBox="0 0 300 180" fill="none"><circle cx="150" cy="75" r="34" stroke="#e9cfc4" stroke-width="2"/><path d="M93 153c6-34 27-51 57-51s51 17 57 51" stroke="#e9cfc4" stroke-width="2"/><path d="M117 73c9-30 56-43 72-8" stroke="#e9cfc4" stroke-width="8" stroke-linecap="round" opacity=".45"/><circle cx="138" cy="77" r="2" fill="#e9cfc4"/><circle cx="162" cy="77" r="2" fill="#e9cfc4"/></svg>`
+};
+
+const state = {
+  monitoring: true,
+  page: 'projects',
+  search: '',
+  selectedProjectId: '019a9f10-7c21-7000-8000-000000000001',
+  year: 2026,
+  month: 10, // November
+  selectedDay: 23,
+  detailDay: null,
+  draft: null,
+  projects: [
+    {
+      id: '019a9f10-7c21-7000-8000-000000000001',
+      name: 'Action Director',
+      label: '3D / TOOL DEVELOPMENT',
+      cover: 'c1',
+      desc: 'Interactive character direction, staging and composition workflows.',
+      status: 'ongoing',
+      updated: 'Today',
+      path: 'D:\\Projects\\Action_Director',
+      tags: ['ComfyUI', '3D', 'Three.js'],
+      lksConfirmed: 'Export presets locked for standalone build compatibility.',
+      lksInferred: '5 files changed today across export and viewport controls.',
+      lksCustom: null
+    },
+    {
+      id: '019a9f10-7c21-7000-8000-000000000002',
+      name: 'AI Video Experiments',
+      label: 'VISUAL DEVELOPMENT',
+      cover: 'c2',
+      desc: 'World-building, motion passes and lighting consistency tests.',
+      status: 'ongoing',
+      updated: 'Yesterday',
+      path: 'D:\\Projects\\AI_Video_Experiments',
+      tags: ['Video', 'Depth', 'ControlNet'],
+      lksConfirmed: 'Depth-guided camera pass looks cleaner at 24fps.',
+      lksInferred: '4 test outputs and an EXR render sequence saved on Nov 22.',
+      lksCustom: null
+    },
+    {
+      id: '019a9f10-7c21-7000-8000-000000000003',
+      name: '3D Asset Library',
+      label: 'MODELS / MATERIALS',
+      cover: 'c3',
+      desc: 'Shared 3D print assets, materials and tag browser experiments.',
+      status: 'ongoing',
+      updated: '2 days ago',
+      path: 'D:\\Projects\\3D_Asset_Library',
+      tags: ['3MF', 'STL', 'Library'],
+      lksConfirmed: 'Color parser reads .3mf filament slots cleanly.',
+      lksInferred: '2 library index files updated on Nov 21.',
+      lksCustom: null
+    },
+    {
+      id: '019a9f10-7c21-7000-8000-000000000004',
+      name: 'RetopoCAD',
+      label: 'CAD / RECONSTRUCTION',
+      cover: 'c4',
+      desc: 'Structured CAD retopology and STEP export tool.',
+      status: 'ongoing',
+      updated: 'Nov 18',
+      path: 'D:\\Projects\\RetopoCAD',
+      tags: ['CAD', 'FastAPI', 'STEP'],
+      lksConfirmed: 'Planar projection verified with Andrew on test manifold.',
+      lksInferred: 'No file changes recorded since Nov 18.',
+      lksCustom: null
+    },
+    {
+      id: '019a9f10-7c21-7000-8000-000000000005',
+      name: 'ComfyUI Beginner Bible',
+      label: 'DOCUMENTATION',
+      cover: 'c5',
+      desc: 'Searchable side-panel dictionary and learning workflows.',
+      status: 'completed',
+      updated: 'Nov 12',
+      path: 'E:\\Archive_3D\\ComfyUI_Beginner_Bible',
+      tags: ['Docs', 'Released'],
+      lksConfirmed: 'Public release published with 136 documented nodes.',
+      lksInferred: 'Archived in E:\\Archive_3D; no changes since completion.',
+      lksCustom: null
+    },
+    {
+      id: '019a9f10-7c21-7000-8000-000000000006',
+      name: 'Dat AI Gal',
+      label: 'CREATIVE EXPERIMENT',
+      cover: 'c6',
+      desc: 'Virtual studio room setups, wardrobe tests and character experiments.',
+      status: 'ongoing',
+      updated: 'Nov 16',
+      path: 'D:\\Projects\\Dat_AI_Gal',
+      tags: ['Character', 'Studio'],
+      lksConfirmed: 'Selected warm desk lamp angle for initial studio test.',
+      lksInferred: 'Reference sheet images added on Nov 16.',
+      lksCustom: null
+    }
+  ],
+  observed: [
+    {
+      id: 'obs-1', projectId: '019a9f10-7c21-7000-8000-000000000001', date: '2026-11-23', time: '09:42',
+      files: [
+        { ext: 'PY', name: 'character_export.py', rel: 'export/character_export.py' },
+        { ext: 'JSON', name: 'export_presets.json', rel: 'config/export_presets.json' },
+        { ext: 'PY', name: 'viewport_controls.py', rel: 'interface/viewport_controls.py' },
+        { ext: 'PNG', name: 'pose_test_04.png', rel: 'tests/pose_test_04.png' },
+        { ext: 'MD', name: 'workflow_notes.md', rel: 'docs/workflow_notes.md' }
+      ]
+    },
+    {
+      id: 'obs-2', projectId: '019a9f10-7c21-7000-8000-000000000002', date: '2026-11-22', time: '16:18',
+      files: [
+        { ext: 'EXR', name: 'shot04_0001.exr .. shot04_0120.exr (120 frames)', rel: 'renders/shot04/' },
+        { ext: 'MP4', name: 'motion_pass_v03.mp4', rel: 'exports/motion_pass_v03.mp4' }
+      ]
+    },
+    {
+      id: 'obs-3', projectId: '019a9f10-7c21-7000-8000-000000000003', date: '2026-11-21', time: '14:10',
+      files: [
+        { ext: '3MF', name: 'diorama_base_v02.3mf', rel: 'models/diorama_base_v02.3mf' },
+        { ext: 'PY', name: 'filament_parser.py', rel: 'src/filament_parser.py' }
+      ]
+    },
+    {
+      id: 'obs-4', projectId: '019a9f10-7c21-7000-8000-000000000004', date: '2026-11-18', time: '11:06',
+      files: [
+        { ext: 'STEP', name: 'housing_retopo_v2.step', rel: 'exports/housing_retopo_v2.step' },
+        { ext: 'PY', name: 'planar_pca.py', rel: 'backend/planar_pca.py' }
+      ]
+    }
+  ],
+  captures: [
+    {
+      id: 'cap-1', projectId: '019a9f10-7c21-7000-8000-000000000001', date: '2026-11-23', time: '14:30',
+      file: 'config/export_presets.json',
+      text: 'Keep export presets compatible with the standalone build.',
+      transcript: 'Verify camera picture-in-picture toggles cleanly before packaging.',
+      audioRetained: true,
+      shot: null
+    },
+    {
+      id: 'cap-2', projectId: '019a9f10-7c21-7000-8000-000000000001', date: '2026-11-18', time: '11:20',
+      file: 'interface/viewport_controls.py',
+      text: 'The viewport should stay simple; keep advanced controls tucked away.',
+      transcript: null, audioRetained: false, shot: null
+    },
+    {
+      id: 'cap-3', projectId: '019a9f10-7c21-7000-8000-000000000002', date: '2026-11-22', time: '16:40',
+      file: 'exports/motion_pass_v03.mp4',
+      text: '24fps depth pass held temporal coherence much better than 30fps.',
+      transcript: null, audioRetained: false, shot: null
+    }
+  ],
+  events: [
+    {
+      id: 'ev-1', projectId: '019a9f10-7c21-7000-8000-000000000001', date: '2026-11-24', time: '15:00',
+      title: 'Standalone build smoke test', remind: '10 min before',
+      desc: 'Test clean install and preset loading.', status: 'scheduled'
+    },
+    {
+      id: 'ev-2', projectId: '019a9f10-7c21-7000-8000-000000000004', date: '2026-11-18', time: '10:30',
+      title: 'CAD wireframe review with Andrew', remind: '10 min before',
+      desc: 'Check circle vs B-spline classification.', status: 'completed'
+    },
+    {
+      id: 'ev-3', projectId: '019a9f10-7c21-7000-8000-000000000002', date: '2026-11-26', time: '11:00',
+      title: 'Render final shot 05 lighting pass', remind: '30 min before',
+      desc: 'Compare warm rim light setup.', status: 'scheduled'
+    }
+  ]
+};
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function esc(str){
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function getProject(id){ return state.projects.find(p => p.id === id); }
+function isoDate(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+
+// ============================================================
+// NAVIGATION & GLOBAL SEARCH
+// ============================================================
+function showPage(name){
+  state.page = name;
+  ['projects','history','detail','settings'].forEach(p => {
+    $(`#${p}Page`).classList.toggle('hidden', p !== name);
+  });
+  $$('.nav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === name || (name === 'detail' && b.dataset.page === 'projects'));
+  });
+  $('#btnSettings').classList.toggle('active', name === 'settings');
+
+  if(name === 'projects') renderProjects();
+  if(name === 'history') renderHistory();
+  if(name === 'detail') renderDetail();
+  window.scrollTo(0, 0);
+}
+$$('.nav button').forEach(b => b.onclick = () => showPage(b.dataset.page));
+
+$('#globalSearch').addEventListener('input', e => {
+  state.search = e.target.value.trim().toLowerCase();
+  $('#clearSearch').classList.toggle('visible', state.search.length > 0);
+  if(state.page === 'projects') renderProjects();
+  if(state.page === 'history') renderHistory();
+  if(state.page === 'detail') renderDetail();
+});
+$('#clearSearch').onclick = () => {
+  $('#globalSearch').value = '';
+  state.search = '';
+  $('#clearSearch').classList.remove('visible');
+  showPage(state.page);
+};
+
+// ============================================================
+// PROJECTS SCREEN
+// ============================================================
+function renderProjects(){
+  const grid = $('#projectGrid');
+  const q = state.search;
+  const list = state.projects.filter(p => {
+    if(!q) return true;
+    return (p.name + ' ' + p.desc + ' ' + p.label + ' ' + p.tags.join(' ')).toLowerCase().includes(q);
+  });
+  if(!list.length){
+    grid.innerHTML = `<div class="empty">No matching projects.</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(p => `
+    <article class="project" data-id="${p.id}">
+      <div class="cover ${p.cover}">
+        ${COVERS[p.cover] || COVERS.c1}
+        <span class="coverlabel">${esc(p.label)}</span>
+      </div>
+      <div class="projectinfo">
+        <div class="projecttitle">${esc(p.name)}</div>
+        <div class="projectdesc">${esc(p.desc)}</div>
+        <div class="projectmeta">
+          <i class="dot ${p.status === 'completed' ? 'completed' : ''}"></i>
+          <span>${p.status === 'ongoing' ? 'Ongoing' : 'Completed'}</span>
+          <span>&middot;</span>
+          <span>${esc(p.updated)}</span>
+        </div>
+      </div>
+    </article>
+  `).join('');
+
+  $$('.project').forEach(el => {
+    el.onclick = () => {
+      state.selectedProjectId = el.dataset.id;
+      state.detailDay = null;
+      showPage('detail');
+    };
+  });
+}
+
+$('#btnConfirmDiscovery').onclick = () => {
+  state.projects.unshift({
+    id: '019a9f10-7c21-7000-8000-000000000007',
+    name: 'Face3D Node',
+    label: 'COMFYUI / 3D',
+    cover: 'c3',
+    desc: 'Multi-view 3D face reconstruction aligned to canonical head mesh.',
+    status: 'ongoing',
+    updated: 'Just registered',
+    path: 'D:\\Work\\Face3D_Node',
+    tags: ['ComfyUI', 'MediaPipe', 'GLB'],
+    lksConfirmed: 'Registered from workspace suggestion.',
+    lksInferred: 'Initial baseline indexed in read-only mode.',
+    lksCustom: null
+  });
+  $('#discoveryWhisper').classList.add('hidden');
+  renderProjects();
+  showToast('ok', 'Project registered', 'Face3D Node added to your projects.');
+};
+$('#btnDismissDiscovery').onclick = () => $('#discoveryWhisper').classList.add('hidden');
+
+// Register Project Modal
+$('#newProject').onclick = () => {
+  $('#regName').value = '';
+  $('#regPath').value = '';
+  $('#regDesc').value = '';
+  $('#registerModal').classList.add('open');
+};
+$('#btnCloseRegister').onclick = () => $('#registerModal').classList.remove('open');
+$('#btnConfirmRegister').onclick = () => {
+  const name = $('#regName').value.trim();
+  const path = $('#regPath').value.trim() || 'D:\\Projects\\New_Project';
+  if(!name) return;
+  const covers = ['c1','c2','c3','c4','c5','c6'];
+  const pick = covers[state.projects.length % covers.length];
+  state.projects.unshift({
+    id: 'proj-' + Date.now(),
+    name,
+    label: 'PROJECT',
+    cover: pick,
+    desc: $('#regDesc').value.trim() || 'Registered project folder.',
+    status: 'ongoing',
+    updated: 'Just now',
+    path,
+    tags: ['Registered'],
+    lksConfirmed: 'Project registered by user.',
+    lksInferred: 'Watching folder for activity.',
+    lksCustom: null
+  });
+  $('#registerModal').classList.remove('open');
+  renderProjects();
+  showToast('ok', 'Project registered', `${name} is now observed.`);
+};
+
+// ============================================================
+// SHARED CALENDAR RENDERER
+// ============================================================
+function renderCalendarGrid(targetId, { year, month, selectedDay, projectId = null, onPick }){
+  const el = document.getElementById(targetId);
+  el.innerHTML = '';
+  ['M','T','W','T','F','S','S'].forEach(x => {
+    const d = document.createElement('div');
+    d.className = 'weekday';
+    d.textContent = x;
+    el.appendChild(d);
+  });
+  const first = new Date(year, month, 1);
+  const offset = (first.getDay() + 6) % 7;
+  const days = new Date(year, month + 1, 0).getDate();
+  const prevDays = new Date(year, month, 0).getDate();
+
+  for(let i = 0; i < 42; i++){
+    let num, muted = false;
+    if(i < offset){ num = prevDays - offset + i + 1; muted = true; }
+    else if(i >= offset + days){ num = i - offset - days + 1; muted = true; }
+    else { num = i - offset + 1; }
+
+    const b = document.createElement('button');
+    const isToday = !muted && year === 2026 && month === 10 && num === 23;
+    b.className = 'day' + (muted ? ' muted' : '') + (!muted && num === selectedDay ? ' selected' : '') + (isToday ? ' today' : '');
+    b.innerHTML = `<span>${num}</span>`;
+
+    if(!muted){
+      const dStr = isoDate(year, month, num);
+      const hasObs = state.observed.some(o => o.date === dStr && (!projectId || o.projectId === projectId));
+      const hasCap = state.captures.some(c => c.date === dStr && (!projectId || c.projectId === projectId));
+      const hasEv = state.events.some(e => e.date === dStr && (!projectId || e.projectId === projectId));
+      if(hasObs || hasCap || hasEv){
+        const m = document.createElement('span');
+        m.className = 'daymarks';
+        if(hasObs) m.innerHTML += '<i class="mark"></i>';
+        if(hasCap) m.innerHTML += '<i class="mark-note"></i>';
+        if(hasEv) m.innerHTML += '<i class="mark-event"></i>';
+        b.appendChild(m);
+      }
+      b.onclick = () => onPick(num);
+    }
+    el.appendChild(b);
+  }
+}
+
+// ============================================================
+// SHARED UNIFIED TIMELINE
+// ============================================================
+function makeGroup(title, icon, body, open = true){
+  return `
+    <div class="eventgroup ${open ? '' : 'collapsed'}">
+      <button class="grouphead" onclick="this.parentElement.classList.toggle('collapsed')">
+        <span class="groupleft"><span>${icon}</span>${title}</span>
+        <span class="chevron">&#8964;</span>
+      </button>
+      <div class="groupbody">${body}</div>
+    </div>
+  `;
+}
+
+function renderTimelineInto(container, { dateStr = null, projectId = null }){
+  const q = state.search;
+  const hit = s => !q || String(s||'').toLowerCase().includes(q);
+
+  const obsList = state.observed.filter(o =>
+    (!dateStr || o.date === dateStr) &&
+    (!projectId || o.projectId === projectId) &&
+    o.files.some(f => hit(f.name) || hit(f.rel) || hit(getProject(o.projectId)?.name))
+  );
+  const capList = state.captures.filter(c =>
+    (!dateStr || c.date === dateStr) &&
+    (!projectId || c.projectId === projectId) &&
+    (hit(c.text) || hit(c.transcript) || hit(c.file) || hit(getProject(c.projectId)?.name))
+  );
+  const evList = state.events.filter(e =>
+    (!dateStr || e.date === dateStr) &&
+    (!projectId || e.projectId === projectId) &&
+    (hit(e.title) || hit(e.desc) || hit(getProject(e.projectId)?.name))
+  );
+
+  if(!obsList.length && !capList.length && !evList.length){
+    container.innerHTML = `<div class="empty">No activity, notes, or scheduled events for this selection.</div>`;
+    return;
+  }
+
+  const flatFiles = [];
+  obsList.forEach(o => {
+    const pName = getProject(o.projectId)?.name || 'Workspace';
+    o.files.forEach(f => flatFiles.push({ ...f, pName, date: o.date, time: o.time }));
+  });
+
+  const fileRow = f => `
+    <div class="fileitem">
+      <div class="fileicon">${esc(f.ext)}</div>
+      <div>
+        <div>${esc(f.name)}</div>
+        <div class="filepath">${!projectId ? esc(f.pName) + ' / ' : ''}${esc(f.rel)} &middot; ${f.time}</div>
+      </div>
+    </div>
+  `;
+
+  let filesBody = '';
+  if(flatFiles.length){
+    const uid = 'extra-' + Math.random().toString(36).slice(2,7);
+    filesBody = flatFiles.slice(0,3).map(fileRow).join('');
+    if(flatFiles.length > 3){
+      filesBody += `<div id="${uid}" class="hidden">${flatFiles.slice(3).map(fileRow).join('')}</div>`;
+      filesBody += `<button class="morefiles" data-more="${uid}" data-cnt="${flatFiles.length - 3}">&#65291; Show ${flatFiles.length - 3} more files</button>`;
+    }
+  } else {
+    filesBody = `<div class="empty">No file changes recorded.</div>`;
+  }
+
+  const capsBody = capList.length ? capList.map(c => {
+    const pName = getProject(c.projectId)?.name || '';
+    return `
+      <div class="eventrow">
+        <span class="eventtime">${esc(c.time)}</span>
+        <div class="eventdesc">
+          <div>${esc(c.text)}</div>
+          ${c.transcript ? `<small style="color:var(--soft);">&#127908; ${esc(c.transcript)}${c.audioRetained ? ' &middot; Audio saved' : ''}</small>` : ''}
+          <small>${!projectId && pName ? esc(pName) + ' &middot; ' : ''}${c.file ? esc(c.file) + ' &middot; ' : ''}${c.date}</small>
+          ${c.shot ? `<img class="shot-thumb" src="${c.shot}" alt="Annotated screenshot">` : ''}
+        </div>
+      </div>
+    `;
+  }).join('') : `<div class="empty">No notes or captures recorded.</div>`;
+
+  const evsBody = evList.length ? evList.map(e => {
+    const pName = getProject(e.projectId)?.name || 'General';
+    const cls = e.status === 'completed' ? 'pill-completed' : e.status === 'cancelled' ? 'pill-cancelled' : 'pill-scheduled';
+    return `
+      <div class="eventrow">
+        <span class="eventtime">${esc(e.time)}</span>
+        <div class="eventdesc">
+          <div>${esc(e.title)}<span class="pill-small ${cls}">${e.status}</span></div>
+          <small>${!projectId ? esc(pName) + ' &middot; ' : ''}${e.date} &middot; Reminder ${esc(e.remind)}${e.desc ? ' &middot; ' + esc(e.desc) : ''}</small>
+          ${e.status === 'scheduled' ? `
+            <div style="margin-top:6px;display:flex;gap:10px;">
+              <button class="textbutton" data-ev-done="${e.id}">Mark completed</button>
+              <button class="textbutton" style="color:var(--muted);" data-ev-cancel="${e.id}">Cancel</button>
+            </div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('') : `<div class="empty">No scheduled events.</div>`;
+
+  container.innerHTML =
+    makeGroup(`Files changed &middot; ${flatFiles.length}`, '&#9636;', filesBody, flatFiles.length > 0) +
+    makeGroup(`Notes &amp; captures &middot; ${capList.length}`, '&#9998;', capsBody, capList.length > 0) +
+    makeGroup(`Scheduled events &middot; ${evList.length}`, '&#9671;', evsBody, evList.length > 0);
+
+  container.querySelectorAll('[data-more]').forEach(btn => {
+    btn.onclick = () => {
+      const box = document.getElementById(btn.dataset.more);
+      box.classList.toggle('hidden');
+      btn.textContent = box.classList.contains('hidden') ? `+ Show ${btn.dataset.cnt} more files` : '− Show fewer files';
+    };
+  });
+  container.querySelectorAll('[data-ev-done]').forEach(btn => {
+    btn.onclick = () => {
+      const ev = state.events.find(x => x.id === btn.dataset.evDone);
+      if(ev) ev.status = 'completed';
+      showPage(state.page);
+    };
+  });
+  container.querySelectorAll('[data-ev-cancel]').forEach(btn => {
+    btn.onclick = () => {
+      const ev = state.events.find(x => x.id === btn.dataset.evCancel);
+      if(ev) ev.status = 'cancelled';
+      showPage(state.page);
+    };
+  });
+}
+
+// ============================================================
+// HISTORY SCREEN
+// ============================================================
+function renderHistory(){
+  $('#monthLabel').textContent = `${monthNames[state.month]} ${state.year}`;
+  renderCalendarGrid('globalCalendar', {
+    year: state.year, month: state.month, selectedDay: state.selectedDay,
+    onPick: d => { state.selectedDay = d; renderHistory(); }
+  });
+  const dt = new Date(state.year, state.month, state.selectedDay);
+  $('#selectedDateLabel').textContent = dt.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+  $('#todayTag').classList.toggle('hidden', !(state.year === 2026 && state.month === 10 && state.selectedDay === 23));
+  renderTimelineInto($('#globalDailyEvents'), { dateStr: isoDate(state.year, state.month, state.selectedDay) });
+}
+$('#prevMonth').onclick = () => { state.month--; if(state.month < 0){ state.month = 11; state.year--; } state.selectedDay = 1; renderHistory(); };
+$('#nextMonth').onclick = () => { state.month++; if(state.month > 11){ state.month = 0; state.year++; } state.selectedDay = 1; renderHistory(); };
+
+// ============================================================
+// PROJECT DETAIL SCREEN
+// ============================================================
+function renderDetail(){
+  const p = getProject(state.selectedProjectId);
+  if(!p) return showPage('projects');
+
+  $('#detailCover').className = `heroimage cover ${p.cover}`;
+  $('#detailCover').innerHTML = `${COVERS[p.cover] || COVERS.c1}<span class="coverlabel">${esc(p.label)}</span>`;
+  $('#detailTitle').textContent = p.name;
+  $('#detailDescription').textContent = p.desc;
+  $('#detailTags').innerHTML = p.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('');
+  $('#detailStatusDot').className = `dot ${p.status === 'completed' ? 'completed' : ''}`;
+  $('#detailStatusLabel').textContent = p.status === 'ongoing' ? 'Ongoing' : 'Completed';
+  $('#detailFolderPath').textContent = p.path;
+  $('#btnToggleStatus').textContent = p.status === 'ongoing' ? 'Mark completed' : 'Reopen ongoing';
+
+  if(p.lksCustom){
+    $('#lksText').textContent = p.lksCustom;
+  } else {
+    $('#lksText').innerHTML = `<span class="lks-tag-c">Confirmed:</span> ${esc(p.lksConfirmed)} <span class="lks-tag-i" style="margin-left:6px;">Inferred:</span> ${esc(p.lksInferred)}`;
+  }
+  $('#lksEditor').classList.add('hidden');
+  $('#lksDisplay').classList.remove('hidden');
+
+  renderCalendarGrid('projectCalendar', {
+    year: 2026, month: 10, selectedDay: state.detailDay, projectId: p.id,
+    onPick: d => { state.detailDay = (state.detailDay === d ? null : d); renderDetail(); }
+  });
+
+  const dStr = state.detailDay ? isoDate(2026, 10, state.detailDay) : null;
+  $('#detailTimelineTitle').textContent = dStr ? `Activity on ${dStr}` : 'Recent activity & notes';
+  $('#btnClearDetailDate').classList.toggle('hidden', !dStr);
+  renderTimelineInto($('#detailTimeline'), { projectId: p.id, dateStr: dStr });
+
+  const notes = state.captures.filter(c => c.projectId === p.id);
+  $('#detailNotesList').innerHTML = notes.length ? notes.map(n => `
+    <div class="note">${esc(n.text)}<small>${n.date} at ${n.time}${n.file ? ' &middot; ' + esc(n.file) : ''}</small></div>
+  `).join('') : `<div class="empty">No notes recorded yet.</div>`;
+}
+
+$('#btnClearDetailDate').onclick = () => { state.detailDay = null; renderDetail(); };
+$('#btnToggleStatus').onclick = () => {
+  const p = getProject(state.selectedProjectId);
+  p.status = p.status === 'ongoing' ? 'completed' : 'ongoing';
+  renderDetail();
+  showToast('ok', 'Status updated', `${p.name} marked as ${p.status}.`);
+};
+$('#btnOpenFolder').onclick = () => {
+  const p = getProject(state.selectedProjectId);
+  showToast('ok', 'Open folder', `Opens ${p.path} in File Explorer.`);
+};
+$('#btnEditLks').onclick = () => {
+  const p = getProject(state.selectedProjectId);
+  $('#lksInput').value = p.lksCustom || `${p.lksConfirmed} ${p.lksInferred}`;
+  $('#lksDisplay').classList.add('hidden');
+  $('#lksEditor').classList.remove('hidden');
+};
+$('#btnCancelLks').onclick = () => { $('#lksEditor').classList.add('hidden'); $('#lksDisplay').classList.remove('hidden'); };
+$('#btnSaveLks').onclick = () => {
+  const p = getProject(state.selectedProjectId);
+  p.lksCustom = $('#lksInput').value.trim();
+  renderDetail();
+};
+
+$('#btnExportManifest').onclick = () => {
+  const p = getProject(state.selectedProjectId);
+  const manifest = {
+    schema_version: '1.0',
+    exported_at_utc: '2026-11-23T15:00:00Z',
+    project: { id: p.id, name: p.name, status: p.status, relative_root: p.path.split('\\').pop() },
+    last_known_state: p.lksCustom || `${p.lksConfirmed} ${p.lksInferred}`,
+    observed_events: state.observed.filter(o => o.projectId === p.id),
+    capture_entries: state.captures.filter(c => c.projectId === p.id).map(c => ({ ...c, shot: c.shot ? 'attachments/shot.png' : null })),
+    calendar_events: state.events.filter(e => e.projectId === p.id)
+  };
+  $('#manifestJson').textContent = JSON.stringify(manifest, null, 2);
+  $('#manifestModal').classList.add('open');
+};
+$('#btnCloseManifest').onclick = () => $('#manifestModal').classList.remove('open');
+$('#btnDownloadManifest').onclick = () => {
+  const blob = new Blob([$('#manifestJson').textContent], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'work_memory_manifest.json';
+  a.click();
+};
+
+// ============================================================
+// QUICK CAPTURE & PROGRESSIVE DISCLOSURE
+// ============================================================
+const canvas = $('#annotatorCanvas');
+const ctx = canvas.getContext('2d');
+let drawTool = 'pen', drawing = false, sx = 0, sy = 0, hist = [], snap = null, shotReady = false;
+let rec = false, recTimer = null, recSec = 0;
+
+function drawPreviewScene(){
+  ctx.fillStyle = '#151921'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#202632'; ctx.fillRect(0, 0, canvas.width, 26);
+  ctx.fillStyle = '#8b96a8'; ctx.font = '11px Segoe UI';
+  ctx.fillText('Active Window — Viewport Preview', 10, 17);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+  for(let x=20;x<580;x+=32){ ctx.beginPath(); ctx.moveTo(x,26); ctx.lineTo(x,210); ctx.stroke(); }
+  for(let y=50;y<210;y+=32){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(580,y); ctx.stroke(); }
+  ctx.strokeStyle = '#a9b8df'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(290, 82, 22, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(290,104); ctx.lineTo(290,155); ctx.moveTo(290,120); ctx.lineTo(255,142); ctx.moveTo(290,120); ctx.lineTo(328,138); ctx.stroke();
+  hist = [canvas.toDataURL()];
+  shotReady = true;
+}
+function restoreImg(url, cb){
+  const i = new Image();
+  i.onload = () => { ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(i,0,0); if(cb) cb(); };
+  i.src = url;
+}
+function cPos(e){
+  const r = canvas.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*(canvas.width/r.width), y:(e.clientY-r.top)*(canvas.height/r.height) };
+}
+canvas.onmousedown = e => {
+  const p = cPos(e);
+  if(drawTool === 'text'){
+    const t = prompt('Label text:', 'Check pose alignment');
+    if(t){ ctx.fillStyle = '#d8b57c'; ctx.font = 'bold 14px Segoe UI'; ctx.fillText(t, p.x, p.y); hist.push(canvas.toDataURL()); }
+    return;
+  }
+  drawing = true; sx = p.x; sy = p.y; snap = canvas.toDataURL();
+  if(drawTool === 'pen'){ ctx.strokeStyle = '#e07a7a'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(sx, sy); }
+};
+canvas.onmousemove = e => {
+  if(!drawing) return;
+  const p = cPos(e);
+  if(drawTool === 'pen'){ ctx.lineTo(p.x, p.y); ctx.stroke(); return; }
+  restoreImg(snap, () => {
+    ctx.strokeStyle = '#e07a7a'; ctx.fillStyle = '#e07a7a'; ctx.lineWidth = 2.5;
+    if(drawTool === 'rect') ctx.strokeRect(sx, sy, p.x-sx, p.y-sy);
+    else if(drawTool === 'circle'){ ctx.beginPath(); ctx.arc(sx, sy, Math.hypot(p.x-sx, p.y-sy), 0, Math.PI*2); ctx.stroke(); }
+    else if(drawTool === 'arrow'){
+      const a = Math.atan2(p.y-sy, p.x-sx);
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(p.x,p.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p.x,p.y);
+      ctx.lineTo(p.x-11*Math.cos(a-.45), p.y-11*Math.sin(a-.45));
+      ctx.lineTo(p.x-11*Math.cos(a+.45), p.y-11*Math.sin(a+.45));
+      ctx.closePath(); ctx.fill();
+    }
+  });
+};
+canvas.onmouseup = () => { if(!drawing) return; drawing = false; hist.push(canvas.toDataURL()); };
+
+$$('.tool-btn[data-tool]').forEach(b => b.onclick = () => {
+  $$('.tool-btn[data-tool]').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  drawTool = b.dataset.tool;
+});
+$('#btnUndoShot').onclick = () => { if(hist.length > 1){ hist.pop(); restoreImg(hist[hist.length-1]); } };
+$('#btnResetShot').onclick = drawPreviewScene;
+
+function fillSelects(){
+  const opts = state.projects.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  $('#capProject').innerHTML = opts;
+  $('#evProject').innerHTML = `<option value="">General (no specific project)</option>` + opts;
+}
+
+function openCapture({ projectId = null, file = '', voice = false, shot = false } = {}){
+  fillSelects();
+  if(projectId) $('#capProject').value = projectId;
+  else if(state.page === 'detail') $('#capProject').value = state.selectedProjectId;
+
+  if(state.draft){
+    $('#capText').value = state.draft.text;
+    $('#capFile').value = state.draft.file;
+    $('#draftBar').classList.add('visible');
+  } else {
+    $('#capText').value = '';
+    $('#capFile').value = file;
+    $('#draftBar').classList.remove('visible');
+  }
+  $('#voiceDrawer').classList.toggle('open', voice);
+  $('#shotDrawer').classList.toggle('open', shot);
+  if(shot) drawPreviewScene();
+  $('#captureModal').classList.add('open');
+}
+function closeCapture(){
+  const txt = $('#capText').value.trim();
+  if(txt){
+    state.draft = { text: txt, file: $('#capFile').value.trim() };
+    showToast('ok', 'Draft saved', 'Your unfinished capture will be restored next time.');
+  }
+  $('#captureModal').classList.remove('open');
+}
+$('#btnQuickCapture').onclick = () => openCapture();
+$('#btnDetailCapture').onclick = () => openCapture({ projectId: state.selectedProjectId });
+$('#btnQuickAddNote').onclick = () => openCapture({ projectId: state.selectedProjectId });
+$('#btnCloseCapture').onclick = closeCapture;
+$('#btnDraftClose').onclick = closeCapture;
+$('#btnDiscardDraft').onclick = () => { state.draft = null; $('#capText').value = ''; $('#capFile').value = ''; $('#draftBar').classList.remove('visible'); };
+$('#btnToggleVoice').onclick = () => $('#voiceDrawer').classList.toggle('open');
+$('#btnToggleShot').onclick = () => {
+  const open = $('#shotDrawer').classList.toggle('open');
+  if(open && !shotReady) drawPreviewScene();
+};
+$('#btnRecordVoice').onclick = () => {
+  if(!rec){
+    rec = true; recSec = 0;
+    $('#btnRecordVoice').textContent = 'Stop (0s)';
+    $('#voiceStatus').textContent = 'Recording...';
+    recTimer = setInterval(() => { recSec++; $('#btnRecordVoice').textContent = `Stop (${recSec}s)`; }, 1000);
+  } else {
+    rec = false; clearInterval(recTimer);
+    $('#btnRecordVoice').textContent = 'Re-record';
+    $('#voiceStatus').textContent = 'Transcription ready for review.';
+    $('#voiceTranscript').value = 'Remember to verify camera export presets before packaging.';
+    $('#voiceResult').classList.remove('hidden');
+  }
+};
+$('#btnSaveCapture').onclick = () => {
+  const txt = $('#capText').value.trim();
+  const tr = $('#voiceResult').classList.contains('hidden') ? null : $('#voiceTranscript').value.trim();
+  const mode = document.querySelector('input[name="audioMode"]:checked')?.value || 'both';
+  const hasShot = $('#shotDrawer').classList.contains('open') && shotReady;
+  if(!txt && !tr && !hasShot) return;
+
+  state.captures.unshift({
+    id: 'cap-' + Date.now(),
+    projectId: $('#capProject').value,
+    date: '2026-11-23',
+    time: new Date().toTimeString().slice(0,5),
+    file: $('#capFile').value.trim(),
+    text: txt || '(Voice / screenshot capture)',
+    transcript: mode === 'audio' ? null : tr,
+    audioRetained: Boolean(tr && (mode === 'both' || mode === 'audio')),
+    shot: hasShot ? canvas.toDataURL() : null
+  });
+  state.draft = null; shotReady = false;
+  $('#voiceResult').classList.add('hidden');
+  $('#captureModal').classList.remove('open');
+  showToast('ok', 'Memory saved', 'Added to your project history.');
+  showPage(state.page);
+};
+
+// ============================================================
+// SCHEDULE EVENT MODAL (Calendar context only)
+// ============================================================
+function openEventModal(pid = ''){
+  fillSelects();
+  $('#evProject').value = pid || '';
+  $('#evTitle').value = '';
+  $('#evDesc').value = '';
+  if(state.page === 'history'){
+    $('#evDate').value = isoDate(state.year, state.month, state.selectedDay);
+  } else if(state.page === 'detail' && state.detailDay){
+    $('#evDate').value = isoDate(2026, 10, state.detailDay);
+  }
+  $('#eventModal').classList.add('open');
+}
+$('#btnScheduleHistory').onclick = () => openEventModal('');
+$('#btnDetailAddEvent').onclick = () => openEventModal(state.selectedProjectId);
+$('#btnCloseEvent').onclick = () => $('#eventModal').classList.remove('open');
+$('#btnSaveEvent').onclick = () => {
+  const title = $('#evTitle').value.trim();
+  if(!title) return;
+  state.events.unshift({
+    id: 'ev-' + Date.now(),
+    projectId: $('#evProject').value || null,
+    date: $('#evDate').value,
+    time: $('#evTime').value,
+    title,
+    remind: $('#evRemind').value,
+    desc: $('#evDesc').value.trim(),
+    status: 'scheduled'
+  });
+  $('#eventModal').classList.remove('open');
+  showToast('cal', 'Event scheduled', `${title} on ${$('#evDate').value} at ${$('#evTime').value}.`);
+  showPage(state.page);
+};
+
+// ============================================================
+// SETTINGS CONTROLS & QUIET TOASTS
+// ============================================================
+$('#btnToggleMonitorSettings').onclick = () => {
+  state.monitoring = !state.monitoring;
+  $('#topDot').classList.toggle('paused', !state.monitoring);
+  $('#statusIndicator').title = state.monitoring ? 'Observing workspaces (read-only)' : 'Monitoring paused';
+  $('#btnToggleMonitorSettings').textContent = state.monitoring ? 'Pause monitoring' : 'Resume monitoring';
+  showToast('ok', state.monitoring ? 'Monitoring resumed' : 'Monitoring paused', state.monitoring ? 'Quietly observing registered workspaces.' : 'File observation is paused.');
+};
+
+$('#btnAddWorkspace').onclick = () => {
+  showToast('ok', 'Add workspace', 'Opens folder picker in Windows to register a new workspace root.');
+};
+$('#btnImportManifest').onclick = () => {
+  showToast('ok', 'Import manifest', 'Opens file picker to restore a portable project manifest.');
+};
+$('#btnBackupDb').onclick = () => {
+  showToast('ok', 'Backup created', 'Local Work Memory database and attachments backed up.');
+};
+
+function showToast(type, title, msg){
+  const stack = $('#toastStack');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `
+    <div class="toast-top">
+      <span>Work Memory</span>
+      <button style="border:0;background:none;color:var(--muted);padding:0;" data-x>&times;</button>
+    </div>
+    <div class="toast-title">${esc(title)}</div>
+    <div class="toast-msg">${esc(msg)}</div>
+  `;
+  el.querySelector('[data-x]').onclick = () => el.remove();
+  stack.appendChild(el);
+  setTimeout(() => { if(el.parentNode) el.remove(); }, 5000);
+}
+
+document.addEventListener('keydown', e => {
+  if(e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'm'){
+    e.preventDefault();
+    openCapture();
+  }
+});
+
+renderProjects();
+</script>
+</body>
+</html>
