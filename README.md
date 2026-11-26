@@ -4,6 +4,10 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB?style=flat-square)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 
+<img width="1920" height="1040" alt="image" src="https://github.com/user-attachments/assets/d41e6849-8717-424f-9d11-a6847b4b84a7" /><img width="1920" height="1017" alt="image" src="https://github.com/user-attachments/assets/1a8cfc29-e939-4948-8987-8e17faa22f3e" />
+
+
+
 **A quiet, local-first Windows desktop memory assistant for creative work.**
 
 WorkMemory preserves the history and context of your projects in the background—without forcing you to reorganize your folders, change your tools, or upload files to the cloud.
